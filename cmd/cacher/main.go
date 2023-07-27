@@ -1,27 +1,26 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/CrusaderX/cacher"
+
+	"github.com/CrusaderX/cacher/internal/fetcher"
+	"github.com/CrusaderX/cacher/internal/registry"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 func main() {
-	filters := []Filter{
-		{Key: "namespace", Value: "default"},
-		{Key: "scheduler", Value: "enabled"},
-	}
-	
-	ec2 := Ec2{
-		Filters: filters,
-	}
-	rds := Rds{
-		Filters: filters,
-	}
+	reg := registry.NewFetcherRegistry()
+	defer reg.Close()
 
-	c1 := make(chan Ec2)
-	c2 := make(chan Rds)
+	ec2session := ec2.New(session.New())
 
-	go func() { sleep 300; c1 <- ec2 }
-	
+	reg.Register(fetcher.NewEc2("EC2", "enabled", ec2session))
+	reg.Register(fetcher.NewRds("RDS", "enabled"))
+
+	go reg.Fetch()
+
+	for r := range reg.Results() {
+		fmt.Println(r)
+	}
 }
