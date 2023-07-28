@@ -50,12 +50,13 @@ func (r *Rds) Fetch() *[]Resource {
 		return &[]Resource{}
 	}
 
+	namespaces := make(map[string][]string)
 	resources := []Resource{}
 	for _, i := range instances.DBInstances {
 		if !r.filter.Match(*i.DBName) {
 			continue
 		}
-		resources = append(resources, Resource{Name: i.DBName})
+		resources = append(resources, Resource{Namespace: namespaces})
 	}
 
 	return &resources

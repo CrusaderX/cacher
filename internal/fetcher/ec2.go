@@ -1,10 +1,7 @@
 package fetcher
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -37,34 +34,32 @@ func (e *Ec2) Fetch() *[]Resource {
 			},
 		},
 	}
-	r, err := e.session.DescribeInstances(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println("fetcher.ec2", aerr.Error())
-			}
-		} else {
-			fmt.Println("fetcher.ec2", err.Error())
-		}
-		return &[]Resource{}
-	}
+	response, _ := e.session.DescribeInstances(input)
+	namespaces := make(map[string][]string)
 
-	resources := []Resource{}
-	for _, res := range r.Reservations {
+	for _, res := range response.Reservations {
 		for _, instance := range res.Instances {
-			var instanceName *string
+			var namespace *string
 			for _, t := range instance.Tags {
-				if *t.Key == "Name" {
-					instanceName = t.Value
+				if *t.Key == "namespace" {
+					namespace = t.Value
 				}
 			}
-			if instanceName == nil {
-				fmt.Println("fetcher.ec2", "cannot find instance name", instance)
+			if namespace == nil {
 				continue
 			}
-			resources = append(resources, Resource{Tags: &Tags{Name: *instanceName}})
+
+			namespaces[*namespace] = append(namespaces[*namespace], *instance.InstanceId)
 		}
+	}
+
+	var resources []Resource
+	for namespace, instanceIds := range namespaces {
+		resources = append(resources, Resource{
+			Namespace: map[string][]string{
+				namespace: instanceIds,
+			},
+		})
 	}
 
 	return &resources
