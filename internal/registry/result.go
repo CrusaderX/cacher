@@ -1,6 +1,10 @@
 package registry
 
+import (
+	"github.com/CrusaderX/cacher/internal/fetcher"
+)
+
 type Result struct {
-	Name   string
-	Values []string
+	FetcherID string
+	Values    *[]fetcher.Resource
 }

@@ -47,8 +47,8 @@ func (r *FetcherRegistry) Fetch() {
 
 				values := f.Fetch()
 				r.results <- Result{
-					Name:   f.Name(),
-					Values: values,
+					FetcherID: f.Name(),
+					Values:    values,
 				}
 			}(fth)
 		}

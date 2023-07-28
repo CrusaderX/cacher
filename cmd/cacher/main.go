@@ -7,16 +7,19 @@ import (
 	"github.com/CrusaderX/cacher/internal/registry"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/rds"
 )
 
 func main() {
 	reg := registry.NewFetcherRegistry()
 	defer reg.Close()
 
-	ec2session := ec2.New(session.New())
+	awssession := session.New()
+	ec2session := ec2.New(awssession)
+	rdssession := rds.New(awssession)
 
 	reg.Register(fetcher.NewEc2("EC2", "enabled", ec2session))
-	reg.Register(fetcher.NewRds("RDS", "enabled"))
+	reg.Register(fetcher.NewRds("RDS", "enabled", rdssession, &fetcher.RdsFilter{StartsWith: "dev"}))
 
 	go reg.Fetch()
 

@@ -26,7 +26,7 @@ func (e *Ec2) Name() string {
 	return e.name
 }
 
-func (e *Ec2) Fetch() []string {
+func (e *Ec2) Fetch() *[]Resource {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -42,14 +42,30 @@ func (e *Ec2) Fetch() []string {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println(aerr.Error())
+				fmt.Println("fetcher.ec2", aerr.Error())
 			}
 		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
+			fmt.Println("fetcher.ec2", err.Error())
+		}
+		return &[]Resource{}
+	}
+
+	resources := []Resource{}
+	for _, res := range r.Reservations {
+		for _, instance := range res.Instances {
+			var instanceName *string
+			for _, t := range instance.Tags {
+				if *t.Key == "Name" {
+					instanceName = t.Value
+				}
+			}
+			if instanceName == nil {
+				fmt.Println("fetcher.ec2", "cannot find instance name", instance)
+				continue
+			}
+			resources = append(resources, Resource{Tags: &Tags{Name: *instanceName}})
 		}
 	}
-	fmt.Println(r)
-	return []string{"3", "4"}
+
+	return &resources
 }
