@@ -1,10 +1,7 @@
 package fetcher
 
 import (
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -26,7 +23,7 @@ func (e *Ec2) Name() string {
 	return e.name
 }
 
-func (e *Ec2) Fetch() []string {
+func (e *Ec2) Fetch() *[]Resource {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -37,19 +34,33 @@ func (e *Ec2) Fetch() []string {
 			},
 		},
 	}
-	r, err := e.session.DescribeInstances(input)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			default:
-				fmt.Println(aerr.Error())
+	response, _ := e.session.DescribeInstances(input)
+	namespaces := make(map[string][]string)
+
+	for _, res := range response.Reservations {
+		for _, instance := range res.Instances {
+			var namespace *string
+			for _, t := range instance.Tags {
+				if *t.Key == "namespace" {
+					namespace = t.Value
+				}
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
+			if namespace == nil {
+				continue
+			}
+
+			namespaces[*namespace] = append(namespaces[*namespace], *instance.InstanceId)
 		}
 	}
-	fmt.Println(r)
-	return []string{"3", "4"}
+
+	var resources []Resource
+	for namespace, instanceIds := range namespaces {
+		resources = append(resources, Resource{
+			Namespace: map[string][]string{
+				namespace: instanceIds,
+			},
+		})
+	}
+
+	return &resources
 }
