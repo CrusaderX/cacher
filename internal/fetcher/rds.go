@@ -2,33 +2,22 @@ package fetcher
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/rds"
 )
 
-type RdsFilter struct {
-	StartsWith string
-}
-
-func (f *RdsFilter) Match(value string) bool {
-	return strings.HasPrefix(value, f.StartsWith)
-}
-
 type Rds struct {
 	name    string
 	tag     string
 	session *rds.RDS
-	filter  *RdsFilter
 }
 
-func NewRds(name, tag string, session *rds.RDS, clientFilter *RdsFilter) *Rds {
+func NewRds(name, tag string, session *rds.RDS) *Rds {
 	return &Rds{
 		name:    name,
 		tag:     tag,
 		session: session,
-		filter:  clientFilter,
 	}
 }
 
@@ -51,12 +40,35 @@ func (r *Rds) Fetch() *[]Resource {
 	}
 
 	namespaces := make(map[string][]string)
-	resources := []Resource{}
 	for _, i := range instances.DBInstances {
-		if !r.filter.Match(*i.DBName) {
+		var namespace *string
+		isSchedulerEnabled := false
+		for _, t := range i.TagList {
+			if *t.Key == "scheduler" && *t.Value == "enabled" {
+				isSchedulerEnabled = true
+				continue
+			}
+			if *t.Key == "namespace" {
+				namespace = t.Value
+			}
+		}
+		if !isSchedulerEnabled {
 			continue
 		}
-		resources = append(resources, Resource{Namespace: namespaces})
+		if namespace == nil {
+			fmt.Printf("no namespace for rds %s. skipping.\n", *i.DBInstanceIdentifier)
+			continue
+		}
+		namespaces[*namespace] = append(namespaces[*namespace], *i.DBName)
+	}
+
+	var resources []Resource
+	for namespace, instanceIds := range namespaces {
+		resources = append(resources, Resource{
+			Namespace: map[string][]string{
+				namespace: instanceIds,
+			},
+		})
 	}
 
 	return &resources
