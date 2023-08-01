@@ -1,23 +1,34 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/CrusaderX/cacher/internal/fetcher"
 	"github.com/CrusaderX/cacher/internal/registry"
+	"github.com/CrusaderX/cacher/internal/saver"
+	"github.com/CrusaderX/cacher/internal/utils"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/rds"
 )
 
+var logger *utils.Logger
+
 func main() {
-	reg := registry.NewFetcherRegistry()
+	logger = utils.NewLogger()
+	options, err := utils.ParseOptionsFromEnv()
+	if err != nil {
+		logger.Error.Fatalln(err.Error())
+	}
+
+	reg := registry.NewFetcherRegistry(options.FetchPeriod)
 	defer reg.Close()
 
 	awssession, _ := session.NewSession()
 	ec2session := ec2.New(awssession)
 	rdssession := rds.New(awssession)
+	dynamodbsession := dynamodb.New(awssession)
+
+	saver := saver.NewDynamoDBSaver(options.DynamoDBTableName, dynamodbsession)
 
 	reg.Register(fetcher.NewEc2("EC2", "enabled", ec2session))
 	reg.Register(fetcher.NewRds("RDS", "enabled", rdssession))
@@ -25,11 +36,10 @@ func main() {
 	go reg.Fetch()
 
 	for r := range reg.Results() {
-		response, err := json.Marshal(r)
-
+		err := saver.SaveFetcherResult(&r)
 		if err != nil {
-			return
+			logger.Error.Fatalln(err.Error())
 		}
-		fmt.Println(string(response))
+		logger.Info.Printf("saved %s fetcher data to dynamodb\n", r.FetcherID)
 	}
 }
