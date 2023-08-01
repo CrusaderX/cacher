@@ -11,12 +11,14 @@ import (
 type FetcherRegistry struct {
 	fetchers map[string]fetcher.Fetcher
 	results  chan Result
+	period   time.Duration
 }
 
-func NewFetcherRegistry() *FetcherRegistry {
+func NewFetcherRegistry(period time.Duration) *FetcherRegistry {
 	return &FetcherRegistry{
 		fetchers: make(map[string]fetcher.Fetcher),
 		results:  make(chan Result),
+		period:   period,
 	}
 }
 
@@ -34,7 +36,7 @@ func (r *FetcherRegistry) Register(fetcher fetcher.Fetcher) {
 
 func (r *FetcherRegistry) Fetch() {
 
-	for _t_ := range time.Tick(1 * time.Second * 2) {
+	for _t_ := range time.Tick(r.period) {
 		fmt.Println(_t_)
 		wg := sync.WaitGroup{}
 

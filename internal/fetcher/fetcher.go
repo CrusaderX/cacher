@@ -6,5 +6,5 @@ type Fetcher interface {
 }
 
 type Resource struct {
-	Namespace map[string][]string
+	Namespace map[string][]string `json:"namespace"`
 }
