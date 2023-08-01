@@ -1,8 +1,7 @@
 package fetcher
 
 import (
-	"fmt"
-
+	"github.com/CrusaderX/cacher/internal/utils"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/rds"
 )
@@ -25,16 +24,22 @@ func (r *Rds) Name() string {
 	return r.name
 }
 
+var logger *utils.Logger
+
+func init() {
+	logger = utils.NewLogger()
+}
+
 func (r *Rds) Fetch() *[]Resource {
 	instances, err := r.session.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			default:
-				fmt.Println("fetcher.rds", aerr.Error())
+				logger.Error.Println(aerr.Error())
 			}
 		} else {
-			fmt.Println("fetcher.rds", err.Error())
+			logger.Error.Println(err.Error())
 		}
 		return &[]Resource{}
 	}
@@ -56,7 +61,7 @@ func (r *Rds) Fetch() *[]Resource {
 			continue
 		}
 		if namespace == nil {
-			fmt.Printf("no namespace for rds %s. skipping.\n", *i.DBInstanceIdentifier)
+			logger.Warning.Printf("no namespace for rds %s. skipping.\n", *i.DBInstanceIdentifier)
 			continue
 		}
 		namespaces[*namespace] = append(namespaces[*namespace], *i.DBName)

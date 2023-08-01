@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/CrusaderX/cacher/internal/fetcher"
 	"github.com/CrusaderX/cacher/internal/registry"
 	"github.com/CrusaderX/cacher/internal/saver"
@@ -13,11 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/rds"
 )
 
+var logger *utils.Logger
+
 func main() {
+	logger = utils.NewLogger()
 	options, err := utils.ParseOptionsFromEnv()
 	if err != nil {
-		fmt.Println(err)
-		return
+		logger.Error.Fatalln(err.Error())
 	}
 
 	reg := registry.NewFetcherRegistry(options.FetchPeriod)
@@ -38,9 +38,8 @@ func main() {
 	for r := range reg.Results() {
 		err := saver.SaveFetcherResult(&r)
 		if err != nil {
-			fmt.Println(err)
-			return
+			logger.Error.Fatalln(err.Error())
 		}
-		fmt.Printf("saved %s fetcher data to dynamodb\n", r.FetcherID)
+		logger.Info.Printf("saved %s fetcher data to dynamodb\n", r.FetcherID)
 	}
 }

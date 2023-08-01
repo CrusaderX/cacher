@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -35,9 +34,7 @@ func (r *FetcherRegistry) Register(fetcher fetcher.Fetcher) {
 }
 
 func (r *FetcherRegistry) Fetch() {
-
-	for _t_ := range time.Tick(r.period) {
-		fmt.Println(_t_)
+	for _ = range time.Tick(r.period) {
 		wg := sync.WaitGroup{}
 
 		for _, fth := range r.fetchers {
