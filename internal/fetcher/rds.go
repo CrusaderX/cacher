@@ -30,7 +30,7 @@ func init() {
 	logger = utils.NewLogger()
 }
 
-func (r *Rds) Fetch() *[]Resource {
+func (r *Rds) Fetch() []*Namespace {
 	instances, err := r.session.DescribeDBInstances(&rds.DescribeDBInstancesInput{})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -41,10 +41,11 @@ func (r *Rds) Fetch() *[]Resource {
 		} else {
 			logger.Error.Println(err.Error())
 		}
-		return &[]Resource{}
+		return nil
 	}
 
-	namespaces := make(map[string][]string)
+	namespaces := make(map[string]*Namespace)
+
 	for _, i := range instances.DBInstances {
 		var namespace *string
 		isSchedulerEnabled := false
@@ -64,17 +65,16 @@ func (r *Rds) Fetch() *[]Resource {
 			logger.Warning.Printf("no namespace for rds %s. skipping.\n", *i.DBInstanceIdentifier)
 			continue
 		}
-		namespaces[*namespace] = append(namespaces[*namespace], *i.DBName)
+		if _, ok := namespaces[*namespace]; !ok {
+			namespaces[*namespace] = NewNamespace(*namespace)
+		}
+		namespaces[*namespace].Add(*i.DBName)
 	}
 
-	var resources []Resource
-	for namespace, instanceIds := range namespaces {
-		resources = append(resources, Resource{
-			Namespace: map[string][]string{
-				namespace: instanceIds,
-			},
-		})
+	namespacesLst := make([]*Namespace, 0)
+	for _, namespace := range namespaces {
+		namespacesLst = append(namespacesLst, namespace)
 	}
 
-	return &resources
+	return namespacesLst
 }

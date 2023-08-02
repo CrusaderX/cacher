@@ -22,7 +22,7 @@ func NewDynamoDBSaver(tableName string, session *dynamodb.DynamoDB) *DynamoDBSav
 }
 
 func (d *DynamoDBSaver) SaveFetcherResult(r *registry.Result) error {
-	data, err := json.Marshal(*r.Values)
+	data, err := json.Marshal(r.Values)
 	if err != nil {
 		return fmt.Errorf("cannot encode data from %s fetcher", r.FetcherID)
 	}

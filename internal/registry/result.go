@@ -6,5 +6,5 @@ import (
 
 type Result struct {
 	FetcherID string
-	Values    *[]fetcher.Resource
+	Values    []*fetcher.Namespace
 }

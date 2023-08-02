@@ -23,7 +23,7 @@ func (e *Ec2) Name() string {
 	return e.name
 }
 
-func (e *Ec2) Fetch() *[]Resource {
+func (e *Ec2) Fetch() []*Namespace {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -35,7 +35,7 @@ func (e *Ec2) Fetch() *[]Resource {
 		},
 	}
 	response, _ := e.session.DescribeInstances(input)
-	namespaces := make(map[string][]string)
+	namespaces := make(map[string]*Namespace)
 
 	for _, res := range response.Reservations {
 		for _, instance := range res.Instances {
@@ -49,18 +49,17 @@ func (e *Ec2) Fetch() *[]Resource {
 				continue
 			}
 
-			namespaces[*namespace] = append(namespaces[*namespace], *instance.InstanceId)
+			if _, ok := namespaces[*namespace]; !ok {
+				namespaces[*namespace] = NewNamespace(*namespace)
+			}
+			namespaces[*namespace].Add(*instance.InstanceId)
 		}
 	}
 
-	var resources []Resource
-	for namespace, instanceIds := range namespaces {
-		resources = append(resources, Resource{
-			Namespace: map[string][]string{
-				namespace: instanceIds,
-			},
-		})
+	namespacesLst := make([]*Namespace, 0)
+	for _, namespace := range namespaces {
+		namespacesLst = append(namespacesLst, namespace)
 	}
 
-	return &resources
+	return namespacesLst
 }
