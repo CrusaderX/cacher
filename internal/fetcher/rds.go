@@ -68,7 +68,7 @@ func (r *Rds) Fetch() []*Namespace {
 		if _, ok := namespaces[*namespace]; !ok {
 			namespaces[*namespace] = NewNamespace(*namespace)
 		}
-		namespaces[*namespace].Add(*i.DBName)
+		namespaces[*namespace].Add(*i.DBInstanceIdentifier)
 	}
 
 	namespacesLst := make([]*Namespace, 0)

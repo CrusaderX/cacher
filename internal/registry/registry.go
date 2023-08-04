@@ -34,9 +34,9 @@ func (r *FetcherRegistry) Register(fetcher fetcher.Fetcher) {
 }
 
 func (r *FetcherRegistry) Fetch() {
-	for _ = range time.Tick(r.period) {
-		wg := sync.WaitGroup{}
+	wg := sync.WaitGroup{}
 
+	for _ = range time.Tick(r.period) {
 		for _, fth := range r.fetchers {
 			wg.Add(1)
 
