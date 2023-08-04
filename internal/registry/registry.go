@@ -33,25 +33,30 @@ func (r *FetcherRegistry) Register(fetcher fetcher.Fetcher) {
 	r.fetchers[fetcher.Name()] = fetcher
 }
 
-func (r *FetcherRegistry) Fetch() {
+func (r *FetcherRegistry) send(wg *sync.WaitGroup, f fetcher.Fetcher) {
+	defer wg.Done()
+
+	values := f.Fetch()
+	r.results <- Result{
+		FetcherID: f.Name(),
+		Values:    values,
+	}
+}
+
+func (r *FetcherRegistry) do() {
 	wg := sync.WaitGroup{}
 
+	for _, fth := range r.fetchers {
+		wg.Add(1)
+
+		go r.send(&wg, fth)
+	}
+	wg.Wait()
+}
+
+func (r *FetcherRegistry) Fetch() {
+
 	for _ = range time.Tick(r.period) {
-		for _, fth := range r.fetchers {
-			wg.Add(1)
-
-			go func(f fetcher.Fetcher) {
-
-				defer wg.Done()
-
-				values := f.Fetch()
-				r.results <- Result{
-					FetcherID: f.Name(),
-					Values:    values,
-				}
-			}(fth)
-		}
-
-		wg.Wait()
+		r.do()
 	}
 }
