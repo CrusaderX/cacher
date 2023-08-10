@@ -55,8 +55,7 @@ func (r *FetcherRegistry) do() {
 }
 
 func (r *FetcherRegistry) Fetch() {
-
-	for _ = range time.Tick(r.period) {
+	for range time.Tick(r.period) {
 		r.do()
 	}
 }
