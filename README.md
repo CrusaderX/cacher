@@ -1,7 +1,6 @@
 # cacher
 
-![](https://github.com/CrusaderX/cacher/.github/workflows/lint.yaml)
-[![Actions Status](https://github.com/CrusaderX/cacher/.github/workflows/lint.yaml)](https://github.com/CrusaderX/cacher/actions)
+![go lint](https://github.com/CrusaderX/cacher/actions/workflows/lint.yaml/badge.svg)
 
 - [] add boltdb as an alternative storage type
 - [] add tests
