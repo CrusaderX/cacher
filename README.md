@@ -1,6 +1,6 @@
 # cacher
 
-![](https://github.com/CrusaderX/cacher/.github/workflows/golangci-lint.yaml)
+![](https://github.com/CrusaderX/cacher/.github/workflows/lint.yaml)
 
 - [] add boltdb as an alternative storage type
 - [] add tests
