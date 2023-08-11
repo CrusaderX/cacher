@@ -44,8 +44,7 @@ func (r *Rds) Fetch() []*Namespace {
 		return nil
 	}
 
-	namespaces := make(map[string]*Namespace)
-
+	namespaceByName := make(map[string]*Namespace)
 	for _, i := range instances.DBInstances {
 		var namespace *string
 		isSchedulerEnabled := false
@@ -65,16 +64,16 @@ func (r *Rds) Fetch() []*Namespace {
 			logger.Warning.Printf("no namespace for rds %s. skipping.\n", *i.DBInstanceIdentifier)
 			continue
 		}
-		if _, ok := namespaces[*namespace]; !ok {
-			namespaces[*namespace] = NewNamespace(*namespace)
+		if _, ok := namespaceByName[*namespace]; !ok {
+			namespaceByName[*namespace] = NewNamespace(*namespace)
 		}
-		namespaces[*namespace].Add(*i.DBInstanceIdentifier)
+		namespaceByName[*namespace].Add(*i.DBInstanceIdentifier)
 	}
 
-	namespacesLst := make([]*Namespace, 0)
-	for _, namespace := range namespaces {
-		namespacesLst = append(namespacesLst, namespace)
+	namespaces := make([]*Namespace, 0)
+	for _, namespace := range namespaceByName {
+		namespaces = append(namespaces, namespace)
 	}
 
-	return namespacesLst
+	return namespaces
 }

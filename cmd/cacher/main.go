@@ -23,7 +23,10 @@ func main() {
 	reg := registry.NewFetcherRegistry(options.FetchPeriod)
 	defer reg.Close()
 
-	awssession, _ := session.NewSession()
+	awssession, err := session.NewSession()
+	if err != nil {
+		logger.Error.Fatalln(err.Error())
+	}
 	ec2session := ec2.New(awssession)
 	rdssession := rds.New(awssession)
 	dynamodbsession := dynamodb.New(awssession)
@@ -33,7 +36,10 @@ func main() {
 	reg.Register(fetcher.NewEc2("EC2", "enabled", ec2session))
 	reg.Register(fetcher.NewRds("RDS", "enabled", rdssession))
 
+	logger.Info.Println("Initialization finished.")
+
 	go reg.Fetch()
+	logger.Info.Println("Fetchers started.")
 
 	for r := range reg.Results() {
 		err := saver.SaveFetcherResult(&r)

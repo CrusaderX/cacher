@@ -34,9 +34,13 @@ func (e *Ec2) Fetch() []*Namespace {
 			},
 		},
 	}
-	response, _ := e.session.DescribeInstances(input)
-	namespaces := make(map[string]*Namespace)
+	response, err := e.session.DescribeInstances(input)
+	if err != nil {
+		logger.Error.Println(err.Error())
+		return nil
+	}
 
+	namespaceByName := make(map[string]*Namespace)
 	for _, res := range response.Reservations {
 		for _, instance := range res.Instances {
 			var namespace *string
@@ -49,17 +53,17 @@ func (e *Ec2) Fetch() []*Namespace {
 				continue
 			}
 
-			if _, ok := namespaces[*namespace]; !ok {
-				namespaces[*namespace] = NewNamespace(*namespace)
+			if _, ok := namespaceByName[*namespace]; !ok {
+				namespaceByName[*namespace] = NewNamespace(*namespace)
 			}
-			namespaces[*namespace].Add(*instance.InstanceId)
+			namespaceByName[*namespace].Add(*instance.InstanceId)
 		}
 	}
 
-	namespacesLst := make([]*Namespace, 0)
-	for _, namespace := range namespaces {
-		namespacesLst = append(namespacesLst, namespace)
+	namespaces := make([]*Namespace, 0, len(namespaceByName))
+	for _, namespace := range namespaceByName {
+		namespaces = append(namespaces, namespace)
 	}
 
-	return namespacesLst
+	return namespaces
 }

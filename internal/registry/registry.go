@@ -44,11 +44,10 @@ func (r *FetcherRegistry) send(wg *sync.WaitGroup, f fetcher.Fetcher) {
 }
 
 func (r *FetcherRegistry) do() {
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 
 	for _, fth := range r.fetchers {
 		wg.Add(1)
-
 		go r.send(&wg, fth)
 	}
 	wg.Wait()
